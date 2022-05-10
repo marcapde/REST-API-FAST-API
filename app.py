@@ -1,12 +1,17 @@
 from asyncio.windows_events import NULL
+import binhex
+from msilib.schema import Binary
 import string
+from tkinter import image_types
 from typing import List, Optional
 from unicodedata import name
 import uuid
 from fastapi import FastAPI
 from pydantic import BaseModel
+from PIL import Image
+
 import random
-app=FastAPI()
+app=FastAPI(title='REST API')
 
 
 class image (BaseModel):
@@ -15,7 +20,7 @@ class image (BaseModel):
     location: str
     width: int
     height:int
-    file: str
+    img: Optional [bytes]
 
 class gallery (BaseModel):
     id : Optional [int];
@@ -40,23 +45,31 @@ def get_galleries():
     
     return result
 
-
-###############################
-
-#defining galleries page
-@app.get('/galleries/{g_id}')
-def get_gallery():
-    return {"WELCOME":"Welcome to my API"}
-
-
 @app.post('/galleries')
 def post_gallery(prop:gallery):
     #to make it comfy for testing id will be a random int within this small range
     #for more scalability use uuid instead.
     prop.id=random.randint(0,9999)
     galleries.append(dict(prop))
-    return {"WELCOME":"Welcome to my API"}
+    return prop.id
 
+###############################
+
+#defining galleries page
+@app.get('/galleries/{g_id}')
+def get_gallery(g_id: int):
+    for g in galleries:
+        if(g.id==g_id):
+            return dict(name=g.get("name"),desc=g.get("desc"))
+
+@app.delete('/galleries/{g_id}')
+def del_gallery(g_id: int):
+    for g in galleries:
+        if(g.get("id")==g_id):
+            galleries.remove(g)
+            return g_id
+
+###############################
 
 #defining galleries page
 @app.get('/galleries/{g_id}/images')
