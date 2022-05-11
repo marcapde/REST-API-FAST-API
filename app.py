@@ -77,14 +77,13 @@ async def get_images(g_id: int):
     result =[]
     for g in galleries:
         if (g.get("id")==g_id):
-            for i in g.get("images"):               
-                result.append(i["name"])
-                '''   dict(name=i["name"]))
-                desc=i.get("desc"),
-                    location= i.get("location"),
-                    width= i.get("width"),
-                    height= i.get("height")
-                ))'''
+            for i in g.get("images"):
+                aux = dict(i)               
+                result.append(dict(name=aux["name"],
+                desc=aux["desc"],
+                location=aux["location"],
+                width=aux["width"],
+                height=aux["height"]))
           
                     
     return result
