@@ -13,32 +13,34 @@ from PIL import Image
 import random
 app=FastAPI(title='REST API')
 
-
+##########CLASSES###############
 class image (BaseModel):
+    id : Optional [int];
     name: str
     desc: str
     location: str
     width: int
     height:int
-    img: Optional [bytes]
+    img: bytes | None = None
 
 class gallery (BaseModel):
     id : Optional [int];
     name: str;
     desc : str;
-    images : Optional [List[image]];
+    images : list[image] | None = None
+##########CLASSES###############
 
 galleries = []
 
 #defining main page
 @app.get('/')
-def root():
+async def root():
     return {"WELCOME":"go to /galleries for more data"}
 
 
 #defining galleries page
 @app.get('/galleries')
-def get_galleries():
+async def get_galleries():
     result =[]
     for g in galleries:
        result.append(dict(name=g.get("name"),desc=g.get("desc")))
@@ -46,35 +48,69 @@ def get_galleries():
     return result
 
 @app.post('/galleries')
-def post_gallery(prop:gallery):
+async def post_gallery(prop:gallery):
     #to make it comfy for testing id will be a random int within this small range
     #for more scalability use uuid instead.
     prop.id=random.randint(0,9999)
     galleries.append(dict(prop))
     return prop.id
 
-###############################
+#############/galleries/{g_id}##################
 
-#defining galleries page
 @app.get('/galleries/{g_id}')
-def get_gallery(g_id: int):
+async def get_gallery(g_id: int):
     for g in galleries:
         if(g.id==g_id):
             return dict(name=g.get("name"),desc=g.get("desc"))
 
 @app.delete('/galleries/{g_id}')
-def del_gallery(g_id: int):
+async def del_gallery(g_id: int):
     for g in galleries:
         if(g.get("id")==g_id):
             galleries.remove(g)
             return g_id
 
-###############################
+##############/galleries/{g_id}/images#################
 
-#defining galleries page
 @app.get('/galleries/{g_id}/images')
-def get_images():
-    return {"WELCOME":"Welcome to my API"}
+async def get_images(g_id: int):
+    result =[]
+    for g in galleries:
+        if (g.get("id")==g_id):
+            for i in g.get("images"):               
+                result.append(i["name"])
+                '''   dict(name=i["name"]))
+                desc=i.get("desc"),
+                    location= i.get("location"),
+                    width= i.get("width"),
+                    height= i.get("height")
+                ))'''
+          
+                    
+    return result
+
+@app.post('/galleries/{g_id}/images')
+async def post_images(g_id:int,image:image):
+    #to make it comfy for testing id will be a random int within this small range
+    #for more scalability use uuid instead.
+    image.id=random.randint(0,9999)
+    for g in galleries:
+        if (g.get("id")==g_id):
+            print(g["images"])
+            if (g["images"]!= None):
+                print(image)
+                g["images"].append(image)
+                print(g["images"]) 
+                #lista = g["images"]
+    	        #print(g["images"])               
+                #g["images"]=lista                
+            else:                
+                g["images"]=[image]
+            print(g["images"])
+            
+            return image.id
+
+###############################
 
 #defining galleries page
 @app.get('/galleries/{g_id}/images/{i_id}')
