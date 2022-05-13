@@ -1,13 +1,10 @@
 from asyncio.windows_events import NULL
-import binhex
-from msilib.schema import Binary
-import string
 from tkinter import image_types
 from typing import List, Optional
 from unicodedata import name
 from fastapi import FastAPI, Response
 from pydantic import BaseModel
-from fastapi import File, UploadFile
+from fastapi import File, UploadFile, HTTPException
 
 import random
 app=FastAPI(title='REST API')
@@ -70,6 +67,8 @@ async def get_gallery(g_id: int):
         if(g.get("id")==g_id):
             cache = g
             return dict(name=g.get("name"),desc=g.get("desc"))
+    
+    raise HTTPException(status_code=404, detail="Gallery not found")
 
 @app.delete('/galleries/{g_id}')
 async def del_gallery(g_id: int):
@@ -83,7 +82,7 @@ async def del_gallery(g_id: int):
         if(g.get("id")==g_id):
             galleries.remove(g)
             return g_id
-
+    raise HTTPException(status_code=404, detail = "Gallery not found") 
 ##############/galleries/{g_id}/images#################
 
 @app.get('/galleries/{g_id}/images')
@@ -101,8 +100,10 @@ async def get_images(g_id: int):
                 width=aux["width"],
                 height=aux["height"]))
           
-                    
-    return result
+    if (result == []):
+        raise HTTPException(status_code=404, detail="Gallery not found")
+    else:   
+        return result
 
 @app.post('/galleries/{g_id}/images')
 async def post_images(g_id:int,image:image):
@@ -128,15 +129,19 @@ async def post_images(g_id:int,image:image):
 ############/galleries/{g_id}/images/{i_id}###################
 
 @app.get('/galleries/{g_id}/images/{i_id}')
-def get_image_byId(g_id:int,i_id:int):
+async def get_image_byId(g_id:int,i_id:int):
     global cache 
+    found=0
     if (cache != None and cache.get("id")==g_id):
         g = cache
     else: 
         for g in galleries:
             if (g.get("id")==g_id):
                 cache = g
+                found = 1
                 break
+    if(found==0):
+        raise HTTPException(status_code=404, detail="Gallery not found")
     for i in g["images"]:
         if(i.id == i_id):
             aux = dict(i)               
@@ -146,12 +151,11 @@ def get_image_byId(g_id:int,i_id:int):
                 width=aux["width"],
                 height=aux["height"]))
     #if not found
-    return {"405":"image not found"}
-
+    raise HTTPException(status_code=405, detail="Image not found")
 
 
 @app.delete('/galleries/{g_id}/images/{i_id}')
-def del_image_byId(g_id:int,i_id:int):   
+async def del_image_byId(g_id:int,i_id:int):   
     index = 0
     for g in galleries:
         if (g.get("id")==g_id):
@@ -196,8 +200,12 @@ async def get_file(g_id:int, i_id:int):
             cache = g
             break
         index+=1
+    if (index == len(galleries)):
+         raise HTTPException(status_code=404, detail="Gallery not found")
+    ii = 0
     for i in g["images"]:
         if(i.id == i_id):
-            return Response(galleries[index]["images"]["img"])
-            
-    return {"405":"image not found"}
+            return(Response(galleries[index]["images"][ii].img))
+        ii+=1
+    #if not found
+        raise HTTPException(status_code=404, detail="Image not found")
